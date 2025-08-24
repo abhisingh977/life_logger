@@ -5,7 +5,7 @@
 
 set -e  # Exit on any error
 
-PROJECT_DIR="/home/abhishek/abhi/logging"
+PROJECT_DIR="/home/abhishek/abhi/life_logger"
 cd "$PROJECT_DIR"
 
 # Colors for output
