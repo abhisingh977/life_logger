@@ -46,9 +46,7 @@ transcript.pid
 transcriptions/*.db
 transcriptions/*.db-journal
 
-# Generated audio chunks
-transcriptions/audio_chunks/*
-!transcriptions/audio_chunks/.gitkeep
+
 
 # OS generated files
 .DS_Store

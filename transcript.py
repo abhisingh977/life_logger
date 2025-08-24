@@ -1,11 +1,11 @@
 import whisper
 import sounddevice as sd
-import wave
+
 import threading
 import queue
 import numpy as np
 from datetime import datetime, timedelta
-import json
+
 import os
 import time
 from collections import deque
@@ -83,7 +83,6 @@ class RealTimeWhisperTranscriber:
     def setup_directories(self):
         """Create necessary directories"""
         os.makedirs(self.output_dir, exist_ok=True)
-        os.makedirs(os.path.join(self.output_dir, "audio_chunks"), exist_ok=True)
         
     def setup_database(self):
         """Setup database using the improved database manager"""
@@ -227,13 +226,7 @@ class RealTimeWhisperTranscriber:
                 # Get audio chunk from queue (with timeout)
                 audio_chunk, timestamp = self.audio_queue.get(timeout=1.0)
                 
-                # Save audio chunk (optional, for debugging)
-                if False:  # Set to True if you want to save audio files
-                    audio_filename = f"chunk_{timestamp.strftime('%Y%m%d_%H%M%S')}.wav"
-                    audio_path = os.path.join(self.output_dir, "audio_chunks", audio_filename)
-                    self.save_audio_chunk(audio_chunk, audio_path)
-                else:
-                    audio_filename = None
+                # Audio chunk processed (no saving needed - using database only)
                 
                 # Transcribe audio
                 start_time = time.time()
@@ -294,14 +287,6 @@ class RealTimeWhisperTranscriber:
             except Exception as e:
                 self.logger.error(f"Error in audio processing: {e}")
                 
-    def save_audio_chunk(self, audio_data, filename):
-        """Save audio chunk to file"""
-        with wave.open(filename, 'wb') as wav_file:
-            wav_file.setnchannels(self.channels)
-            wav_file.setsampwidth(4)  # 32-bit float = 4 bytes
-            wav_file.setframerate(self.sample_rate)
-            wav_file.writeframes(audio_data.tobytes())
-            
     def transcription_handler_thread(self):
         """Thread function for handling transcriptions"""
         self.logger.info("Transcription handler thread started")
@@ -314,8 +299,7 @@ class RealTimeWhisperTranscriber:
                 # Save to database
                 self.save_transcription(transcription)
                 
-                # Save to daily file
-                self.save_to_daily_file(transcription)
+
                 
                 # Print to console (optional)
                 self.print_transcription(transcription)
@@ -334,29 +318,7 @@ class RealTimeWhisperTranscriber:
         except Exception as e:
             self.logger.error(f"Failed to save transcription to database: {e}")
         
-    def save_to_daily_file(self, transcription):
-        """Save transcription to daily JSON file"""
-        date_str = transcription["timestamp"].strftime("%Y-%m-%d")
-        daily_file = os.path.join(self.output_dir, f"transcriptions_{date_str}.json")
-        
-        # Read existing data
-        if os.path.exists(daily_file):
-            with open(daily_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        else:
-            data = []
-            
-        # Add new transcription
-        data.append({
-            "timestamp": transcription["timestamp"].isoformat(),
-            "text": transcription["text"],
-            "confidence": transcription["confidence"],
-            "duration": transcription["duration"]
-        })
-        
-        # Write back to file
-        with open(daily_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+
             
     def print_transcription(self, transcription):
         """Print transcription to console"""

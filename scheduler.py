@@ -230,7 +230,7 @@ class TranscriptionScheduler:
                         
                         if failed_attempts >= max_failures:
                             self.logger.error(f"✗ CRITICAL: Summary generation has failed {max_failures} times in a row!")
-                            self.logger.error("✗ Please check Ollama service and database connectivity")
+                            self.logger.error("✗ Please check database connectivity and summarization service")
                     
             except Exception as e:
                 failed_attempts += 1

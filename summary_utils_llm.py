@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
 Enhanced utility module for generating summaries using local LLMs
-Supports both Hugging Face transformers and Ollama
+Supports Hugging Face transformers
 """
 
 import os
 import logging
-import requests
+
 import json
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -23,8 +23,8 @@ class LLMTranscriptionSummarizer:
         
         Args:
             db_path: Path to SQLite database
-            summarization_method: "simple", "transformers", or "ollama"
-            model_name: Model name for transformers or ollama (optional)
+            summarization_method: "simple" or "transformers"
+            model_name: Model name for transformers (optional)
         """
         self.db_path = db_path
         self.summarization_method = summarization_method
@@ -38,8 +38,7 @@ class LLMTranscriptionSummarizer:
         """Get default model based on method"""
         if self.summarization_method == "transformers":
             return "sshleifer/distilbart-cnn-12-6"  # Lightweight distilled BART for summarization
-        elif self.summarization_method == "ollama":
-            return "llama3.1:latest"  # Use available model (deprecated)
+
         return None
     
     def setup_logging(self):
@@ -87,12 +86,7 @@ class LLMTranscriptionSummarizer:
                 self.logger.info("Falling back to simple summarization")
                 self.summarization_method = "simple"
         
-        elif self.summarization_method == "ollama":
-            if not self._check_ollama():
-                self.logger.warning("Ollama not available, falling back to simple summarization")
-                self.summarization_method = "simple"
-            else:
-                self.logger.info(f"Using Ollama model: {self.model_name}")
+
     
     def _has_cuda(self):
         """Check if CUDA is available"""
@@ -102,13 +96,7 @@ class LLMTranscriptionSummarizer:
         except ImportError:
             return False
     
-    def _check_ollama(self):
-        """Check if Ollama is available"""
-        try:
-            response = requests.get("http://localhost:11434/api/tags", timeout=5)
-            return response.status_code == 200
-        except:
-            return False
+
     
     def chunk_text(self, text: str, max_chunk_size: int = 1000) -> List[str]:
         """Split text into manageable chunks"""
@@ -230,57 +218,7 @@ class LLMTranscriptionSummarizer:
             self.logger.error(f"Transformers summarization failed: {e}")
             return self.simple_summarize(text)
     
-    def summarize_with_ollama(self, text: str) -> str:
-        """Generate summary using Ollama"""
-        try:
-            # Split into chunks if text is very long
-            chunks = self.chunk_text(text, max_chunk_size=2000)
-            summaries = []
-            
-            for chunk in chunks:
-                prompt = f"""Please provide a concise summary of the following transcript in 2-3 sentences:
 
-{chunk}
-
-Summary:"""
-                
-                payload = {
-                    "model": self.model_name,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.3,
-                        "num_predict": 100
-                    }
-                }
-                
-                response = requests.post(
-                    "http://localhost:11434/api/generate",
-                    json=payload,
-                    timeout=30
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    summary = result.get("response", "").strip()
-                    summaries.append(summary)
-                else:
-                    self.logger.error(f"Ollama request failed: {response.status_code}")
-                    return self.simple_summarize(text)
-            
-            # Combine summaries if multiple chunks
-            if len(summaries) > 1:
-                combined_summary = " ".join(summaries)
-                # If combined is still too long, summarize again
-                if len(combined_summary.split()) > 100:
-                    return self.summarize_with_ollama(combined_summary)
-                return combined_summary
-            else:
-                return summaries[0] if summaries else self.simple_summarize(text)
-            
-        except Exception as e:
-            self.logger.error(f"Ollama summarization failed: {e}")
-            return self.simple_summarize(text)
     
     def simple_summarize(self, text: str) -> str:
         """Fallback simple extractive summarization"""
@@ -315,8 +253,7 @@ Summary:"""
         # Choose summarization method
         if self.summarization_method == "transformers" and self.summarizer:
             return self.summarize_with_transformers(combined_text)
-        elif self.summarization_method == "ollama":
-            return self.summarize_with_ollama(combined_text)
+
         else:
             return self.simple_summarize(combined_text)
     

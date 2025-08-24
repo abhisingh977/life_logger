@@ -64,7 +64,7 @@ setup() {
     install_deps
     
     # Create necessary directories
-    mkdir -p transcriptions/audio_chunks
+    mkdir -p transcriptions
     
     log "Setup completed successfully!"
 }
@@ -103,7 +103,7 @@ show_help() {
     echo "  $0 transcript --model small            # Single-run with small model"
     echo "  $0 transcript --language hi           # Transcribe in Hindi"
     echo "  $0 transcript --translate              # Auto-translate to English"
-    echo "  $0 summarize --method ollama           # Generate summaries with Ollama"
+    echo "  $0 summarize --method transformers     # Generate summaries with transformers"
     echo "  $0 view --last 24                     # View last 24 hours"
     echo ""
     echo "Daemon Mode:"
@@ -311,11 +311,7 @@ run_gui() {
     poetry run python transcription_viewer_gui.py "$@"
 }
 
-# Test Ollama connection
-test_ollama() {
-    log "Testing Ollama connection..."
-    poetry run python test_ollama.py "$@"
-}
+
 
 # Enter Poetry shell
 enter_shell() {
@@ -330,7 +326,8 @@ clean() {
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         rm -f transcription.log
-        rm -rf transcriptions/audio_chunks/*
+        # Clean up transcription logs only
+        echo "Note: Database and transcription files are preserved"
         log "Cleanup completed!"
     else
         info "Cleanup cancelled."
@@ -356,16 +353,7 @@ health_check() {
         warn "⚠ Database file not found (will be created on first run)"
     fi
     
-    # Check Ollama (optional)
-    if command -v ollama &> /dev/null; then
-        if ollama list &> /dev/null; then
-            log "✓ Ollama is available"
-        else
-            warn "⚠ Ollama is installed but not running"
-        fi
-    else
-        warn "⚠ Ollama not installed (optional for summarization)"
-    fi
+
     
     log "Health check completed!"
 }
@@ -424,11 +412,7 @@ main() {
             check_poetry
             run_gui "$@"
             ;;
-        test-ollama)
-            shift
-            check_poetry
-            test_ollama "$@"
-            ;;
+
         shell)
             check_poetry
             enter_shell

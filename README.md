@@ -6,7 +6,7 @@ A real-time audio transcription and life logging system using Whisper AI and LLM
 
 - Real-time audio transcription using OpenAI Whisper
 - Continuous daemon mode with automatic periodic summarization
-- LLM-powered intelligent summarization using Ollama
+- LLM-powered intelligent summarization using transformers
 - SQLite database for persistent storage
 - GUI viewer for browsing transcriptions
 - Multi-language support with optional translation
@@ -14,16 +14,19 @@ A real-time audio transcription and life logging system using Whisper AI and LLM
 ## Quick Start
 
 1. **Setup**:
+
    ```bash
    ./run.sh setup
    ```
 
 2. **Start daemon mode** (continuous transcription + periodic summaries):
+
    ```bash
    ./run.sh daemon start
    ```
 
 3. **View transcriptions**:
+
    ```bash
    ./run.sh view --last 24
    ./run.sh gui  # Launch GUI viewer
@@ -43,7 +46,7 @@ Run `./run.sh help` for complete usage instructions and examples.
 - Python 3.8+
 - Poetry (for dependency management)
 - Microphone access
-- Optional: Ollama for LLM summarization
+- Optional: PyTorch and transformers for LLM summarization
 
 ## Project Structure
 

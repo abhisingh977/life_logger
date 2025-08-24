@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 LLM-enhanced script to generate summaries from transcriptions data
-Supports multiple local LLM backends: transformers, ollama, or simple fallback
+Supports transformers or simple fallback
 """
 
 import argparse
@@ -40,13 +40,7 @@ def check_dependencies(method):
             return True
         except ImportError:
             return False
-    elif method == "ollama":
-        try:
-            import requests
-            response = requests.get("http://localhost:11434/api/tags", timeout=5)
-            return response.status_code == 200
-        except:
-            return False
+
     return True
 
 def main():
@@ -55,7 +49,7 @@ def main():
     parser.add_argument("--interval", type=int, default=10, help="Summary interval in minutes (default: 10)")
     parser.add_argument("--db", default="transcriptions/transcriptions.db", 
                        help="Path to database (default: transcriptions/transcriptions.db)")
-    parser.add_argument("--method", choices=["simple", "transformers", "ollama"], 
+    parser.add_argument("--method", choices=["simple", "transformers"], 
                        default="transformers", help="Summarization method (default: transformers)")
     parser.add_argument("--model", help="Model name (e.g., 'facebook/bart-large-cnn' or 'llama3.2:1b')")
     parser.add_argument("--view", action="store_true", help="View existing summaries instead of generating")
@@ -81,10 +75,7 @@ def main():
             print("Warning: transformers or torch not available. Install with: pip install transformers torch")
             print("Falling back to simple method")
             args.method = "simple"
-        elif args.method == "ollama":
-            print("Warning: Ollama not available. Make sure Ollama is running on localhost:11434")
-            print("Falling back to simple method")
-            args.method = "simple"
+
     
     try:
         # Create LLM-enhanced summarizer instance
